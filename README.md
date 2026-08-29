@@ -23,3 +23,5 @@ Releases use immutable, signed `vYYYY.MM.DD.N` tags. `N` starts at `1` for each
 date and is never zero-padded. Historical `v1.0.x` tags remain valid and are not
 renamed or moved. App callers pin the shared Fastfile to the calendar tag and
 the reusable workflow to its corresponding full commit SHA.
+
+Current release: `v2026.08.29.2`.

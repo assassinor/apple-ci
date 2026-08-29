@@ -1,5 +1,10 @@
 require "minitest/autorun"
-require_relative "../fastlane/lib/apple_ci_version"
+
+def opt_out_usage; end
+def desc(*); end
+def lane(*); end
+
+load File.expand_path("../fastlane/Fastfile", __dir__)
 
 class AppleCiVersionTest < Minitest::Test
   def validate(marketing_version: "2026.08.29", tag: "v2026.08.29.1", tagger_date: "2026.08.29")

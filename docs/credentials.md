@@ -16,8 +16,8 @@
 1. Create the Team API key in App Store Connect and download its `.p8` once.
 2. Create a Developer ID Application certificate and pair it with its private
    key. For Match compatibility on current macOS runners, store imported RSA
-   private keys as traditional PEM (`BEGIN RSA PRIVATE KEY`) even though Match
-   uses a `.p12` filename.
+   private keys as traditional PKCS#1 PEM even though Match uses a `.p12`
+   filename.
 3. Import an Apple Distribution identity in the same format. If an existing
    login-keychain identity cannot be exported because the old keychain password
    is unavailable, create a dedicated CI Distribution certificate and leave the

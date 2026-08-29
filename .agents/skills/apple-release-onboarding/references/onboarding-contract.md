@@ -12,7 +12,9 @@ Add to each app:
 - `fastlane/Fastfile` importing the shared Fastfile at an immutable semantic tag.
 - Optional `fastlane/capabilities.yml` for standard Apple capabilities.
 - A thin workflow invoking the corresponding reusable workflow by full SHA and
-  explicitly mapping the five `APPLE_*` organization secrets.
+  explicitly mapping the five `APPLE_*` secrets. Prefer selected organization
+  secrets; use repository-level secrets when a private repository belongs to a
+  GitHub Free organization.
 
 Defaults proposed before confirmation: public `omzcj` for macOS, private
 `oh-my-app` for iOS. Preserve an existing repository's owner and visibility.

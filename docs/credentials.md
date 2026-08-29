@@ -36,6 +36,15 @@ Do not revoke an old signing certificate automatically: already distributed
 software may depend on it. Revoke an old API key only after an inventory proves
 that no other automation uses it and the replacement has completed a canary.
 
+## Repository controls
+
+The public `apple-ci` repository uses active default-branch and release-tag
+rulesets, secret scanning, and push protection. Keep `apple-signing` private.
+On the current GitHub plan, rulesets and secret scanning are unavailable for
+that private personal repository; compensate with encrypted-only Match assets,
+M2-only writes, an M1 push URL that is deliberately disabled, and a read-only
+CI deploy key. Enable the native controls after upgrading the account plan.
+
 ## Rotation
 
 Create the replacement first, import and verify it in Match, update both

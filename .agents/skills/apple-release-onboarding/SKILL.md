@@ -19,6 +19,9 @@ any Apple, Match, GitHub secret, or certificate mutation.
 2. Choose macOS Developer ID or iOS TestFlight based on the existing product.
 3. Present a read-only plan for Bundle ID/capability, Match, secret-access, and
    repository changes. Confirm owner/name/visibility before creating a remote.
+   Check the GitHub organization plan: selected organization secrets are the
+   default, but a private repository in a GitHub Free organization must receive
+   the same five names as repository-level secrets.
 4. Add the standard app-side Fastlane files and a thin caller workflow. Keep
    project-specific validation, packaging, artifact names, and release notes in
    the app repository.

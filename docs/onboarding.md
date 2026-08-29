@@ -27,7 +27,7 @@ thin `fastlane/Fastfile`, optional `fastlane/capabilities.yml`, and a caller
 workflow. Import the shared Fastfile at an immutable `apple-ci` semantic version
 and call the reusable workflow at the corresponding full commit SHA.
 
-Caller workflows explicitly map these organization secrets:
+Caller workflows explicitly map these standard secrets:
 
 - `APPLE_ASC_KEY_ID`
 - `APPLE_ASC_ISSUER_ID`
@@ -36,6 +36,11 @@ Caller workflows explicitly map these organization secrets:
 - `APPLE_MATCH_GIT_PRIVATE_KEY`
 
 Never use `secrets: inherit` across organizations.
+
+Prefer organization secrets with selected-repository access. Before configuring
+them, check the organization plan and repository visibility. GitHub Free does
+not expose organization secrets to private repositories, so a private app in a
+Free organization must use repository-level secrets with the same names.
 
 ## Validate and roll out
 

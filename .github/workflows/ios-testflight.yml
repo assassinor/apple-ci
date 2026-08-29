@@ -1,0 +1,100 @@
+name: Shared iOS TestFlight Release
+
+on:
+  workflow_call:
+    inputs:
+      runner:
+        description: GitHub-hosted macOS runner label
+        required: false
+        default: macos-15
+        type: string
+      xcode-version:
+        description: Xcode version selected before the build
+        required: false
+        default: "26.3"
+        type: string
+      lane:
+        description: App repository Fastlane lane
+        required: false
+        default: testflight
+        type: string
+      upload:
+        description: Upload the exported IPA to TestFlight
+        required: false
+        default: false
+        type: boolean
+    secrets:
+      APPLE_ASC_KEY_ID:
+        required: true
+      APPLE_ASC_ISSUER_ID:
+        required: true
+      APPLE_ASC_PRIVATE_KEY_BASE64:
+        required: true
+      APPLE_MATCH_PASSWORD:
+        required: true
+      APPLE_MATCH_GIT_PRIVATE_KEY:
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  testflight:
+    name: Archive, export, and upload/verify
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: 60
+    env:
+      APPLE_ASC_KEY_ID: ${{ secrets.APPLE_ASC_KEY_ID }}
+      APPLE_ASC_ISSUER_ID: ${{ secrets.APPLE_ASC_ISSUER_ID }}
+      APPLE_ASC_PRIVATE_KEY_BASE64: ${{ secrets.APPLE_ASC_PRIVATE_KEY_BASE64 }}
+      MATCH_PASSWORD: ${{ secrets.APPLE_MATCH_PASSWORD }}
+      APPLE_CI_UPLOAD: ${{ inputs.upload }}
+      FASTLANE_SKIP_UPDATE_CHECK: "1"
+      FASTLANE_HIDE_CHANGELOG: "1"
+
+    steps:
+      - name: Check out app repository
+        uses: actions/checkout@v7
+        with:
+          lfs: true
+
+      - name: Select Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: ${{ inputs.xcode-version }}
+
+      - name: Set up Ruby 3.3 and Fastlane
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+          bundler-cache: true
+
+      - name: Configure read-only Match deploy key
+        env:
+          MATCH_KEY: ${{ secrets.APPLE_MATCH_GIT_PRIVATE_KEY }}
+        run: |
+          KEY_DIR="$RUNNER_TEMP/apple-ci-ssh"
+          KEY_PATH="$KEY_DIR/apple-signing"
+          install -m 700 -d "$KEY_DIR"
+          printf '%s\n' "$MATCH_KEY" > "$KEY_PATH"
+          chmod 600 "$KEY_PATH"
+          ssh-keyscan -t ed25519 github.com > "$KEY_DIR/known_hosts"
+          echo "MATCH_GIT_PRIVATE_KEY=$KEY_PATH" >> "$GITHUB_ENV"
+          echo "GIT_SSH_COMMAND=ssh -i $KEY_PATH -o IdentitiesOnly=yes -o UserKnownHostsFile=$KEY_DIR/known_hosts" >> "$GITHUB_ENV"
+
+      - name: Run app TestFlight lane
+        run: bundle exec fastlane "${{ inputs.lane }}"
+
+      - name: Upload IPA artifact
+        if: ${{ !inputs.upload }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: signed-ipa-${{ github.run_number }}
+          path: build/fastlane/*.ipa
+          if-no-files-found: error
+
+      - name: Remove transient credentials
+        if: always()
+        run: |
+          rm -rf "$RUNNER_TEMP/apple-ci-ssh"
+          rm -f "$RUNNER_TEMP"/AuthKey_*.p8

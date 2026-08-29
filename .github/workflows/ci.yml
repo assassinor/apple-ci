@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate shared automation
+    runs-on: macos-26
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+          bundler-cache: true
+
+      - name: Validate Ruby and Fastlane
+        run: |
+          ruby -c scripts/apple_config.rb
+          ruby test/apple_config_test.rb
+          bundle exec fastlane lanes
+
+      - name: Validate shell and public-repository safety
+        run: |
+          shellcheck scripts/check-secrets.sh
+          scripts/check-secrets.sh

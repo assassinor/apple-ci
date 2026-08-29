@@ -1,0 +1,33 @@
+---
+name: apple-release-onboarding
+description: Connect an existing macOS or iOS app to the shared assassinor/apple-ci Fastlane, Match, and GitHub Actions release system. Use only when explicitly invoked for release onboarding; do not create application source code or a new Xcode project.
+---
+
+# Apple Release Onboarding
+
+Onboard a working local Apple app to Team `566UG6DQ7E` signing and release
+automation. Preserve its build behavior; this skill does not scaffold an app.
+
+Read [the onboarding contract](references/onboarding-contract.md) before editing
+an app. Read [the credential boundary](references/credential-boundary.md) before
+any Apple, Match, GitHub secret, or certificate mutation.
+
+## Workflow
+
+1. Require a clean worktree. Inspect remotes, platform, targets/schemes, Bundle
+   IDs, entitlements, versioning, scripts, artifacts, and workflows.
+2. Choose macOS Developer ID or iOS TestFlight based on the existing product.
+3. Present a read-only plan for Bundle ID/capability, Match, secret-access, and
+   repository changes. Confirm owner/name/visibility before creating a remote.
+4. Add the standard app-side Fastlane files and a thin caller workflow. Keep
+   project-specific validation, packaging, artifact names, and release notes in
+   the app repository.
+5. Pin `import_from_git` to an immutable `apple-ci` semantic version and the
+   reusable workflow to its corresponding full commit SHA; update both together.
+6. Run local syntax/build checks and an Apple capability plan before applying.
+7. Use manual dispatch with publish/upload disabled. Do not remove legacy
+   secrets until one real canary succeeds.
+
+Stop at the documented manual boundary for App Store Connect app records,
+agreements, managed capabilities, and one-time Apple credential creation. Never
+commit, print, or copy a secret into a command transcript.

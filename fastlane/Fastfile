@@ -1,0 +1,137 @@
+require "base64"
+require "fileutils"
+require "shellwords"
+require "tmpdir"
+
+opt_out_usage
+
+APPLE_TEAM_ID = "566UG6DQ7E"
+MATCH_REPOSITORY = "git@github.com:assassinor/apple-signing.git"
+MATCH_BRANCH = "team-566UG6DQ7E"
+
+def apple_ci_required_env(name)
+  value = ENV[name]
+  UI.user_error!("Missing required environment variable: #{name}") if value.to_s.strip.empty?
+  value
+end
+
+def apple_ci_truthy?(value)
+  %w[1 true yes on].include?(value.to_s.downcase)
+end
+
+def apple_ci_prepare_api_key
+  key_id = apple_ci_required_env("APPLE_ASC_KEY_ID")
+  issuer_id = apple_ci_required_env("APPLE_ASC_ISSUER_ID")
+  encoded_key = apple_ci_required_env("APPLE_ASC_PRIVATE_KEY_BASE64")
+  key_path = File.join(ENV.fetch("RUNNER_TEMP", Dir.tmpdir), "AuthKey_#{key_id}.p8")
+
+  File.binwrite(key_path, Base64.decode64(encoded_key))
+  File.chmod(0o600, key_path)
+  ENV["NOTARY_KEY_PATH"] = key_path
+  ENV["NOTARY_KEY_ID"] = key_id
+  ENV["NOTARY_ISSUER_ID"] = issuer_id
+
+  app_store_connect_api_key(
+    key_id: key_id,
+    issuer_id: issuer_id,
+    key_filepath: key_path,
+    duration: 1_200,
+    in_house: false
+  )
+end
+
+def apple_ci_find_developer_id
+  output = sh("security find-identity -v -p codesigning", log: false)
+  identity = output[/\"(Developer ID Application:[^\"]+)\"/, 1]
+  UI.user_error!("Match did not install a Developer ID Application identity") if identity.nil?
+  identity
+end
+
+desc "Shared Developer ID signing, notarization, and optional release flow"
+lane :shared_macos_developer_id do |options|
+  setup_ci
+  api_key = apple_ci_prepare_api_key
+
+  match(
+    type: "developer_id",
+    readonly: true,
+    storage_mode: "git",
+    git_url: ENV.fetch("MATCH_GIT_URL", MATCH_REPOSITORY),
+    git_branch: ENV.fetch("MATCH_GIT_BRANCH", MATCH_BRANCH),
+    git_private_key: apple_ci_required_env("MATCH_GIT_PRIVATE_KEY"),
+    app_identifier: Array(options[:app_identifiers]),
+    skip_provisioning_profiles: true,
+    api_key: api_key
+  )
+
+  ENV["CODE_SIGN_IDENTITY"] = apple_ci_find_developer_id
+  ENV["CODE_SIGN_KEYCHAIN"] = ENV["MATCH_KEYCHAIN_NAME"] if ENV["MATCH_KEYCHAIN_NAME"]
+  ENV["EXPECTED_TEAM_ID"] = APPLE_TEAM_ID
+
+  sh(options[:validation_command]) unless options[:validation_command].to_s.empty?
+  sh(options.fetch(:package_command))
+  sh(options.fetch(:notarize_command))
+
+  publish = options.key?(:publish) ? options[:publish] : ENV["APPLE_CI_PUBLISH"]
+  if apple_ci_truthy?(publish)
+    release_command = options[:release_command].to_s
+    UI.user_error!("A release command is required when publishing") if release_command.empty?
+    sh(release_command)
+  else
+    UI.message("Publish disabled; signed and notarized artifacts were verified only")
+  end
+ensure
+  FileUtils.rm_f(ENV["NOTARY_KEY_PATH"]) if ENV["NOTARY_KEY_PATH"]
+end
+
+desc "Shared App Store archive/export and optional TestFlight upload flow"
+lane :shared_ios_testflight do |options|
+  setup_ci
+  api_key = apple_ci_prepare_api_key
+  identifiers = Array(options.fetch(:app_identifiers))
+
+  match(
+    type: "appstore",
+    readonly: true,
+    storage_mode: "git",
+    git_url: ENV.fetch("MATCH_GIT_URL", MATCH_REPOSITORY),
+    git_branch: ENV.fetch("MATCH_GIT_BRANCH", MATCH_BRANCH),
+    git_private_key: apple_ci_required_env("MATCH_GIT_PRIVATE_KEY"),
+    app_identifier: identifiers,
+    api_key: api_key
+  )
+
+  archive_path = options.fetch(:archive_path)
+  output_directory = options.fetch(:output_directory)
+  output_name = options.fetch(:output_name)
+  xcargs = [
+    "DEVELOPMENT_TEAM=#{APPLE_TEAM_ID}",
+    "MARKETING_VERSION=#{options.fetch(:marketing_version)}",
+    "CURRENT_PROJECT_VERSION=#{options.fetch(:build_number)}"
+  ].join(" ")
+
+  build_app(
+    project: options.fetch(:project),
+    scheme: options.fetch(:scheme),
+    configuration: options.fetch(:configuration, "Release"),
+    archive_path: archive_path,
+    output_directory: output_directory,
+    output_name: output_name,
+    export_method: "app-store",
+    clean: true,
+    xcargs: xcargs
+  )
+
+  upload = options.key?(:upload) ? options[:upload] : ENV["APPLE_CI_UPLOAD"]
+  if apple_ci_truthy?(upload)
+    upload_to_testflight(
+      api_key: api_key,
+      ipa: File.join(output_directory, output_name),
+      skip_waiting_for_build_processing: true
+    )
+  else
+    UI.message("TestFlight upload disabled; the signed IPA was exported only")
+  end
+ensure
+  FileUtils.rm_f(ENV["NOTARY_KEY_PATH"]) if ENV["NOTARY_KEY_PATH"]
+end

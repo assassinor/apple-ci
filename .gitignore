@@ -1,0 +1,8 @@
+.bundle/
+vendor/bundle/
+fastlane/report.xml
+fastlane/README.md
+*.p8
+*.p12
+*.cer
+*.mobileprovision

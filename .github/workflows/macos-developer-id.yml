@@ -1,0 +1,80 @@
+name: Shared macOS Developer ID Release
+
+on:
+  workflow_call:
+    inputs:
+      runner:
+        description: GitHub-hosted macOS runner label
+        required: false
+        default: macos-26
+        type: string
+      lane:
+        description: App repository Fastlane lane
+        required: false
+        default: release
+        type: string
+      publish:
+        description: Create or update the GitHub Release
+        required: false
+        default: false
+        type: boolean
+    secrets:
+      APPLE_ASC_KEY_ID:
+        required: true
+      APPLE_ASC_ISSUER_ID:
+        required: true
+      APPLE_ASC_PRIVATE_KEY_BASE64:
+        required: true
+      APPLE_MATCH_PASSWORD:
+        required: true
+      APPLE_MATCH_GIT_PRIVATE_KEY:
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build, sign, notarize, and release/verify
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: 60
+    env:
+      APPLE_ASC_KEY_ID: ${{ secrets.APPLE_ASC_KEY_ID }}
+      APPLE_ASC_ISSUER_ID: ${{ secrets.APPLE_ASC_ISSUER_ID }}
+      APPLE_ASC_PRIVATE_KEY_BASE64: ${{ secrets.APPLE_ASC_PRIVATE_KEY_BASE64 }}
+      MATCH_PASSWORD: ${{ secrets.APPLE_MATCH_PASSWORD }}
+      APPLE_CI_PUBLISH: ${{ inputs.publish }}
+      FASTLANE_SKIP_UPDATE_CHECK: "1"
+      FASTLANE_HIDE_CHANGELOG: "1"
+
+    steps:
+      - name: Check out app repository
+        uses: actions/checkout@v7
+
+      - name: Set up Ruby 3.3 and Fastlane
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+          bundler-cache: true
+
+      - name: Configure read-only Match deploy key
+        env:
+          MATCH_KEY: ${{ secrets.APPLE_MATCH_GIT_PRIVATE_KEY }}
+        run: |
+          KEY_DIR="$RUNNER_TEMP/apple-ci-ssh"
+          KEY_PATH="$KEY_DIR/apple-signing"
+          install -m 700 -d "$KEY_DIR"
+          printf '%s\n' "$MATCH_KEY" > "$KEY_PATH"
+          chmod 600 "$KEY_PATH"
+          ssh-keyscan -t ed25519 github.com > "$KEY_DIR/known_hosts"
+          echo "MATCH_GIT_PRIVATE_KEY=$KEY_PATH" >> "$GITHUB_ENV"
+          echo "GIT_SSH_COMMAND=ssh -i $KEY_PATH -o IdentitiesOnly=yes -o UserKnownHostsFile=$KEY_DIR/known_hosts" >> "$GITHUB_ENV"
+
+      - name: Run app release lane
+        run: bundle exec fastlane "${{ inputs.lane }}"
+
+      - name: Remove transient credentials
+        if: always()
+        run: |
+          rm -rf "$RUNNER_TEMP/apple-ci-ssh"
+          rm -f "$RUNNER_TEMP"/AuthKey_*.p8

@@ -33,7 +33,7 @@ any Apple, Match, GitHub secret, or certificate mutation.
 5. Add the standard app-side Fastlane files and a thin caller workflow. Keep
    project-specific validation, packaging, artifact names, and release notes in
    the app repository.
-6. Pin `import_from_git` to an immutable `apple-ci` semantic version and the
+6. Pin `import_from_git` to an immutable `apple-ci` calendar version and the
    reusable workflow to its corresponding full commit SHA; update both together.
 7. Run local syntax/build checks and an Apple capability plan before applying.
 8. Use manual dispatch with publish/upload disabled. Do not remove legacy

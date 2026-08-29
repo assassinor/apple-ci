@@ -24,8 +24,9 @@ release automation. It does not create an app or Xcode project.
 
 Add a locked Fastlane dependency, `fastlane/Appfile`, `fastlane/Matchfile`, a
 thin `fastlane/Fastfile`, optional `fastlane/capabilities.yml`, and a caller
-workflow. Import the shared Fastfile at an immutable `apple-ci` semantic version
-and call the reusable workflow at the corresponding full commit SHA.
+workflow. Import the shared Fastfile at an immutable `apple-ci` calendar version
+(`vYYYY.MM.DD.N`) and call the reusable workflow at the corresponding full
+commit SHA.
 
 Caller workflows explicitly map these standard secrets:
 

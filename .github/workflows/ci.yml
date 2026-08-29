@@ -30,6 +30,7 @@ jobs:
         run: |
           ruby -c scripts/apple_config.rb
           ruby test/apple_config_test.rb
+          ruby test/apple_ci_version_test.rb
           bundle exec fastlane lanes
 
       - name: Validate shell and public-repository safety

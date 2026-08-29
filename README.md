@@ -16,3 +16,10 @@ provisioning profiles, API keys, passwords, or deploy keys here.
 
 Start with [the onboarding guide](docs/onboarding.md). Credential bootstrap and
 rotation are documented in [the credential runbook](docs/credentials.md).
+
+## Versioning
+
+Releases use immutable, signed `vYYYY.MM.DD.N` tags. `N` starts at `1` for each
+date and is never zero-padded. Historical `v1.0.x` tags remain valid and are not
+renamed or moved. App callers pin the shared Fastfile to the calendar tag and
+the reusable workflow to its corresponding full commit SHA.

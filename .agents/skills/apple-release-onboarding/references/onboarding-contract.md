@@ -10,7 +10,7 @@ Add to each app:
 - `fastlane/Matchfile` with the private Match URL, branch
   `team-566UG6DQ7E`, identifiers, type, and readonly-by-default behavior. Only
   an explicitly authorized maintenance session may opt into writes.
-- `fastlane/Fastfile` importing the shared Fastfile at an immutable semantic tag.
+- `fastlane/Fastfile` importing the shared Fastfile at an immutable calendar tag.
 - Optional `fastlane/capabilities.yml` for standard Apple capabilities.
 - A thin workflow invoking the corresponding reusable workflow by full SHA and
   explicitly mapping the five `APPLE_*` secrets. Prefer selected organization

@@ -2,6 +2,7 @@ require "base64"
 require "fileutils"
 require "shellwords"
 require "tmpdir"
+require_relative "lib/apple_ci_version"
 
 opt_out_usage
 
@@ -17,6 +18,21 @@ end
 
 def apple_ci_truthy?(value)
   %w[1 true yes on].include?(value.to_s.downcase)
+end
+
+def apple_ci_calendar_release_version(marketing_version:, tag:)
+  UI.user_error!("Release tag contains unsupported characters") unless tag.match?(/\Av[0-9.]+\z/)
+  tagger_date = sh(
+    "TZ=Asia/Shanghai git for-each-ref --format='%(taggerdate:format:%Y.%m.%d)' refs/tags/#{tag}",
+    log: false
+  ).strip
+  AppleCiVersion.validate_calendar_release(
+    marketing_version: marketing_version,
+    tag: tag,
+    tagger_date: tagger_date
+  )
+rescue ArgumentError => error
+  UI.user_error!(error.message)
 end
 
 def apple_ci_prepare_api_key

@@ -7,8 +7,12 @@ This public repository contains:
 
 - reusable GitHub Actions workflows for Developer ID and TestFlight releases;
 - shared Fastlane lanes imported by each app repository;
-- an idempotent App Store Connect Bundle ID/capability helper;
-- the explicit `$apple-release-onboarding` Codex Skill and its operator guide.
+- an idempotent App Store Connect Bundle ID/capability helper.
+
+The explicit `$apple-release-onboarding` Codex Skill is maintained in the
+private `assassinor/github` workspace repository under `.agents/skills`; this
+public automation repository remains secret-free and contains the human guides
+that the Skill follows.
 
 Signing assets are stored separately in the private
 `assassinor/apple-signing` Match repository. Never commit certificates,

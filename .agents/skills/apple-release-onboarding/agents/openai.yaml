@@ -1,6 +1,0 @@
-interface:
-  display_name: "Apple Release Onboarding"
-  short_description: "Connect an existing Apple app to shared signing and CI"
-  default_prompt: "Use $apple-release-onboarding to connect this existing Apple app to signing and release automation."
-policy:
-  allow_implicit_invocation: false

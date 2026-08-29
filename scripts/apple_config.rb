@@ -40,7 +40,7 @@ class AppleConnectClient
   end
 
   def capabilities(bundle_id)
-    request(:get, "/v1/bundleIds/#{bundle_id}/bundleIdCapabilities", query: { "limit" => "200" })
+    request(:get, "/v1/bundleIds/#{bundle_id}/bundleIdCapabilities")
       .fetch("data")
       .map { |item| item.dig("attributes", "capabilityType") }
       .compact

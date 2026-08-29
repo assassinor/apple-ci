@@ -51,3 +51,38 @@ class AppleCiVersionTest < Minitest::Test
     assert_raises(ArgumentError) { validate(tagger_date: "") }
   end
 end
+
+class AppleCiTagVerificationTest < Minitest::Test
+  def valid_payload
+    {
+      "tag" => "v2026.08.30.1",
+      "object" => { "type" => "commit" },
+      "verification" => { "verified" => true, "reason" => "valid" }
+    }
+  end
+
+  def test_accepts_valid_github_tag_signature
+    assert AppleCiTagVerification.validate!(valid_payload, expected_tag: "v2026.08.30.1")
+  end
+
+  def test_rejects_unsigned_tag
+    payload = valid_payload.merge("verification" => { "verified" => false, "reason" => "unsigned" })
+    error = assert_raises(ArgumentError) do
+      AppleCiTagVerification.validate!(payload, expected_tag: "v2026.08.30.1")
+    end
+    assert_match "unsigned", error.message
+  end
+
+  def test_rejects_mismatched_tag
+    assert_raises(ArgumentError) do
+      AppleCiTagVerification.validate!(valid_payload, expected_tag: "v2026.08.30.2")
+    end
+  end
+
+  def test_rejects_non_commit_target
+    payload = valid_payload.merge("object" => { "type" => "tag" })
+    assert_raises(ArgumentError) do
+      AppleCiTagVerification.validate!(payload, expected_tag: "v2026.08.30.1")
+    end
+  end
+end

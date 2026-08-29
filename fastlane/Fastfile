@@ -1,6 +1,7 @@
 require "base64"
 require "date"
 require "fileutils"
+require "json"
 require "shellwords"
 require "tmpdir"
 
@@ -42,6 +43,21 @@ module AppleCiVersion
   private_class_method :parse_date
 end
 
+module AppleCiTagVerification
+  module_function
+
+  def validate!(payload, expected_tag:)
+    raise ArgumentError, "GitHub tag API returned a different tag" unless payload["tag"] == expected_tag
+    raise ArgumentError, "release tag must point to a commit" unless payload.dig("object", "type") == "commit"
+
+    verification = payload.fetch("verification", {})
+    return true if verification["verified"] == true && verification["reason"] == "valid"
+
+    reason = verification["reason"].to_s.empty? ? "unknown" : verification["reason"]
+    raise ArgumentError, "release tag signature is not valid: #{reason}"
+  end
+end
+
 def apple_ci_required_env(name)
   value = ENV[name]
   UI.user_error!("Missing required environment variable: #{name}") if value.to_s.strip.empty?
@@ -50,6 +66,27 @@ end
 
 def apple_ci_truthy?(value)
   %w[1 true yes on].include?(value.to_s.downcase)
+end
+
+def apple_ci_verify_release_tag!
+  return unless ENV["GITHUB_EVENT_NAME"] == "push"
+
+  UI.user_error!("Release pushes must target a Git tag") unless ENV["GITHUB_REF_TYPE"] == "tag"
+  tag = apple_ci_required_env("GITHUB_REF_NAME")
+  repository = apple_ci_required_env("GITHUB_REPOSITORY")
+  apple_ci_required_env("GH_TOKEN")
+  UI.user_error!("Release tag contains unsupported characters") unless tag.match?(/\Av[0-9.]+\z/)
+
+  tag_object = sh("git rev-parse refs/tags/#{tag}", log: false).strip
+  object_type = sh("git cat-file -t #{tag_object}", log: false).strip
+  UI.user_error!("Release tag must be an annotated signed tag") unless object_type == "tag"
+
+  payload = JSON.parse(
+    sh("gh api repos/#{repository}/git/tags/#{tag_object}", log: false)
+  )
+  AppleCiTagVerification.validate!(payload, expected_tag: tag)
+rescue JSON::ParserError, ArgumentError => error
+  UI.user_error!(error.message)
 end
 
 def apple_ci_calendar_release_version(marketing_version:, tag:)
@@ -97,6 +134,7 @@ end
 
 desc "Shared Developer ID signing, notarization, and optional release flow"
 lane :shared_macos_developer_id do |options|
+  apple_ci_verify_release_tag!
   setup_ci
   api_key = apple_ci_prepare_api_key
 
@@ -134,6 +172,7 @@ end
 
 desc "Shared App Store archive/export and optional TestFlight upload flow"
 lane :shared_ios_testflight do |options|
+  apple_ci_verify_release_tag!
   setup_ci
   api_key = apple_ci_prepare_api_key
   identifiers = Array(options.fetch(:app_identifiers))

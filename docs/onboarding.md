@@ -28,6 +28,10 @@ workflow. Import the shared Fastfile at an immutable `apple-ci` calendar version
 (`vYYYY.MM.DD.N`) and call the reusable workflow at the corresponding full
 commit SHA.
 
+Publishing tags must be created with `git tag -s`. The shared lane verifies the
+GitHub tag object's cryptographic signature and rejects lightweight, annotated
+but unsigned, invalid, or mismatched tags before reading Apple credentials.
+
 Caller workflows explicitly map these standard secrets:
 
 - `APPLE_ASC_KEY_ID`

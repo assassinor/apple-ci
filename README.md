@@ -24,4 +24,8 @@ date and is never zero-padded. Historical `v1.0.x` tags remain valid and are not
 renamed or moved. App callers pin the shared Fastfile to the calendar tag and
 the reusable workflow to its corresponding full commit SHA.
 
-Current release: `v2026.08.29.2`.
+For tag-triggered publishing, the shared lanes query GitHub's tag object API and
+require a valid cryptographic signature before accessing Match or Apple
+credentials. Annotated but unsigned tags are rejected.
+
+Current release: `v2026.08.30.1`.

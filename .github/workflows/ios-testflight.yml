@@ -49,6 +49,7 @@ jobs:
       APPLE_ASC_PRIVATE_KEY_BASE64: ${{ secrets.APPLE_ASC_PRIVATE_KEY_BASE64 }}
       MATCH_PASSWORD: ${{ secrets.APPLE_MATCH_PASSWORD }}
       APPLE_CI_UPLOAD: ${{ inputs.upload }}
+      GH_TOKEN: ${{ github.token }}
       FASTLANE_SKIP_UPDATE_CHECK: "1"
       FASTLANE_HIDE_CHANGELOG: "1"
 

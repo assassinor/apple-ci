@@ -35,6 +35,8 @@ any Apple, Match, GitHub secret, or certificate mutation.
    the app repository.
 6. Pin `import_from_git` to an immutable `apple-ci` calendar version and the
    reusable workflow to its corresponding full commit SHA; update both together.
+   Require `git tag -s` for publishing; the shared lane must verify GitHub's tag
+   signature before accessing Apple credentials.
 7. Run local syntax/build checks and an Apple capability plan before applying.
 8. Use manual dispatch with publish/upload disabled. Do not remove legacy
    secrets until one real canary succeeds.

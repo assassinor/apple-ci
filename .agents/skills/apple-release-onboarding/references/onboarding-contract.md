@@ -17,6 +17,9 @@ Add to each app:
   secrets; use repository-level secrets when a private repository belongs to a
   GitHub Free organization.
 
+Release tags are signed annotated tags created with `git tag -s`. Shared lanes
+verify the GitHub tag object signature before Match or Apple credential access.
+
 Defaults proposed before confirmation: public `omzcj` for macOS, private
 `oh-my-app` for iOS. Preserve an existing repository's owner and visibility.
 

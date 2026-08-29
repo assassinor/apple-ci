@@ -4,29 +4,38 @@
 
 - Match repository: private `assassinor/apple-signing`, branch
   `team-566UG6DQ7E`.
-- Match writes: one designated writer only, currently M2. CI and M1 always use
-  `readonly: true`.
+- Match access: readonly by default everywhere. Writes use one explicit,
+  short-lived session at a time on any trusted Mac.
 - App Store Connect: one dedicated Team API key with App Manager role.
 - GitHub Actions: one read-only deploy key for the Match repository.
 - Plaintext `.p8` and `.p12` files are transient and must be deleted after
-  importing or secret upload. Keep recoverable copies only in an approved secret
-  manager or the macOS Keychain.
+  importing or secret upload. Keep the authoritative recovery copy in an
+  approved secret manager or encrypted offline backup; a macOS Keychain is an
+  optional local cache.
 
-## Designated Match writer
+## Serialized Match write sessions
 
-“M2 only” is a local operating policy, not a technical restriction imposed by
-Apple, GitHub, Fastlane, or Match. A single writer prevents concurrent
-certificate/profile changes, accidental credential drift, and a wider set of
-machines holding write-capable recovery material. M2 currently owns that role
-because it holds the recovery Keychain items and was used to initialize Match.
+All machines and CI use Match in readonly mode by default. The ability to write
+belongs to a temporary maintenance session, not to a computer. Any trusted Mac
+may start a session after restoring the management credentials from the
+approved recovery store.
 
-The role is transferable. Before a new Mac becomes the writer, restore the
-recovery items, verify both Developer ID and App Store identities from Match in
-a fresh temporary Keychain, confirm the new Mac can perform an authorized Match
-write, and make the former writer readonly or remove its write access. Never
-operate two designated writers concurrently.
+For each write session:
 
-## Keychain recovery sources
+1. Obtain explicit authorization for the specific certificate or profile
+   mutation and confirm no other write session is active.
+2. Restore the management values and a separate GitHub credential with write
+   access. The CI deploy key is intentionally read-only and cannot be reused.
+3. Fetch `team-566UG6DQ7E`; require a clean, fast-forward state. Verify GitHub
+   access with a non-mutating dry-run before changing Apple or Match state.
+4. Set `APPLE_MATCH_WRITE_SESSION=1` only for the planned Match command. Never
+   force-push or perform unrelated certificate/profile changes.
+5. Push normally, clear the flag, and verify Developer ID and App Store recovery
+   through readonly Match in a fresh temporary Keychain.
+6. Run the relevant non-publishing canary and remove all transient plaintext
+   credentials.
+
+## Credential recovery and local Keychain cache
 
 | GitHub secret | Keychain service | Account |
 | --- | --- | --- |
@@ -37,16 +46,16 @@ operate two designated writers concurrently.
 | `APPLE_MATCH_GIT_PRIVATE_KEY` | `apple-release-match-git-private-key` | `readonly-ci` |
 
 GitHub never exposes secret values after they are stored. Existing workflows
-continue running without the management Mac, but a new private repository or a
-credential rotation needs the recovery sources above.
+continue running without a management environment, but a new private repository
+or a credential rotation needs an independent recovery copy of the values
+above.
 
-All five current entries are generic passwords in the file-based
-`~/Library/Keychains/login.keychain-db`. Although iCloud Passwords and Keychain
-is enabled on M2, these entries were not created with explicit iCloud
-synchronization. Do not assume they will appear on a replacement Mac. Restore
-them from an independently verified recovery copy before transferring the
-writer role. If any item is absent, stop rather than creating an unplanned
-replacement.
+The authoritative copy must be maintained in an approved secret manager or
+encrypted offline backup and tested by restoring it into a separate temporary
+Keychain. A trusted Mac may cache the values as generic passwords in its
+file-based `~/Library/Keychains/login.keychain-db`, but that cache must not be
+assumed to synchronize through iCloud. If any value is absent, stop rather than
+creating an unplanned replacement.
 
 ## Initial bootstrap
 
@@ -59,7 +68,7 @@ replacement.
    login-keychain identity cannot be exported because the old keychain password
    is unavailable, create a dedicated CI Distribution certificate and leave the
    old certificate valid until its consumers have been audited.
-4. On the designated writer (currently M2), initialize Match and import both
+4. In an authorized write session, initialize Match and import both
    identities/profiles into the fixed branch using a strong `MATCH_PASSWORD`.
 5. Verify a fresh temporary keychain can restore both identities using Match in
    readonly mode.
@@ -79,9 +88,8 @@ The public `apple-ci` repository uses active default-branch and release-tag
 rulesets, secret scanning, and push protection. Keep `apple-signing` private.
 On the current GitHub plan, rulesets and secret scanning are unavailable for
 that private personal repository; compensate with encrypted-only Match assets,
-single-writer operation, an M1 push URL that is deliberately disabled, and a
-read-only CI deploy key. Enable the native controls after upgrading the account
-plan.
+readonly-by-default clients, serialized write sessions, and a read-only CI
+deploy key. Enable the native controls after upgrading the account plan.
 
 ## Rotation
 

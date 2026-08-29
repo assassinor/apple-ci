@@ -1,18 +1,21 @@
 # Credential boundary
 
-- Match has exactly one designated writer at a time; that role is currently
-  assigned to M2. This is an operational safety boundary, not an Apple,
-  Fastlane, or hardware requirement. M1 and CI are readonly.
-- Transfer the writer role only after the replacement Mac has restored the
-  recovery items below, passed a fresh temporary-keychain Match verification,
-  and the previous writer has been removed or returned to readonly operation.
+- Match is readonly by default on every local machine and in CI.
+- A write may run on any trusted Mac after the required management credentials
+  have been restored from the approved recovery store. Write access is an
+  explicit, short-lived session, not a permanent machine role.
+- Never run two Match write sessions concurrently. Before writing, confirm the
+  fixed branch is clean and current and that no other session is active. After
+  the normal push, verify readonly recovery in a fresh temporary Keychain,
+  clear the write-session flag, and remove transient credentials.
+- CI always uses the read-only deploy key and can never start a write session.
 - The private Match repository is `assassinor/apple-signing`, fixed branch
   `team-566UG6DQ7E`.
 - Use a dedicated App Store Connect Team API key and a Match-only read deploy
   key. Store their values in organization secrets scoped to selected repos.
   GitHub Free organizations do not expose organization secrets to private
   repositories, so use equivalent repository-level secrets in that case.
-- When importing an RSA private key into Match on M2, encode it as traditional
+- When importing an RSA private key into Match, encode it as traditional
   PKCS#1 PEM under Match's `.p12` filename. Current macOS runners reject PKCS#8
   PEM when Fastlane imports a file with that extension.
 - Decode P8/P12/deploy-key material only into permission-restricted temporary
@@ -23,11 +26,13 @@
   website credential creation require an explicit manual checkpoint.
 - Never use `secrets: inherit` across `omzcj` and `oh-my-app`.
 
-## Credential-management Keychain items
+## Local Keychain cache convention
 
-These are the current local recovery sources. Read values only when a new
-private repository needs repository-level secrets; never print them or place
-them in a command transcript.
+The authoritative recovery copy of these values must live in an approved secret
+manager or encrypted offline backup. A trusted Mac may cache them as generic
+password items using this convention. Read them only when a new private
+repository needs repository-level secrets; never print them or place them in a
+command transcript.
 
 | GitHub secret | Keychain service | Account |
 | --- | --- | --- |
@@ -37,7 +42,6 @@ them in a command transcript.
 | `APPLE_MATCH_PASSWORD` | `apple-release-match-password` | `566UG6DQ7E` |
 | `APPLE_MATCH_GIT_PRIVATE_KEY` | `apple-release-match-git-private-key` | `readonly-ci` |
 
-The current items are in the file-based `login.keychain-db`. iCloud Passwords
-and Keychain is enabled on M2, but these items were not created as explicitly
-synchronizable data-protection Keychain items. Do not treat iCloud as their
-recovery source; if any item is missing, stop and follow the recovery runbook.
+A file-based `login.keychain-db` is only a local operational cache. Do not assume
+that it synchronizes through iCloud or treat it as the sole recovery source. If
+an item is missing, stop and restore it from the approved recovery store.

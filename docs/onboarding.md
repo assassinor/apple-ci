@@ -46,20 +46,26 @@ Free organization must use repository-level secrets with the same names.
 
 For a public `omzcj` repository, do not read or copy secret values. Add the new
 repository to the selected-repository policy of each existing organization
-secret.
+secret with the per-repository additive API. Do not replace the existing
+selected-repository list. Afterward, verify that all five secrets preserve the
+previous repositories and include the new repository.
 
 For a private `oh-my-app` repository while the organization is on GitHub Free,
-configure the five names as repository secrets. On the designated
-credential-management Mac, verify all five Keychain sources documented in the
+configure the five names as repository secrets. On any trusted Mac with access
+to the approved recovery store, verify all five values documented in the
 [credential runbook](credentials.md), then stream each value directly into its
-matching GitHub secret without displaying or logging it. Resolve the ASC private
-key account from the current `APPLE_ASC_KEY_ID` so key rotation does not leave a
-hard-coded Key ID behind.
+matching GitHub secret without displaying or logging it. A validated Keychain
+cache may supply the values. Resolve the ASC private key account from the current
+`APPLE_ASC_KEY_ID` so key rotation does not leave a hard-coded Key ID behind.
 
-If any Keychain source is missing, stop onboarding. Do not silently create a new
-ASC key, Match password, certificate, or deploy key. The current recovery items
-are stored in the local file-based login Keychain and are not confirmed to sync
-through iCloud.
+If any recovery value is missing, stop onboarding. Do not silently create a new
+ASC key, Match password, certificate, or deploy key. A local login Keychain is a
+cache and must not be assumed to synchronize through iCloud.
+
+Normal app onboarding never enables Match writes. Only an explicitly authorized
+certificate/profile maintenance operation may set
+`APPLE_MATCH_WRITE_SESSION=1`, and it must clear the flag after the serialized
+write session.
 
 ## Validate and roll out
 

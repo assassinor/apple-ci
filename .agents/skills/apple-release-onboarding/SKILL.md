@@ -25,10 +25,11 @@ any Apple, Match, GitHub secret, or certificate mutation.
 4. Configure secret access without printing values. For a repository that can
    use selected organization secrets, add only its repository ID to each
    secret's access policy. For a GitHub Free private repository, run on the
-   designated credential-management Mac, verify every documented Keychain item,
-   and stream each value directly into the corresponding repository secret. If
-   an item is absent, stop; do not create replacement credentials or assume
-   that the local login Keychain was synchronized through iCloud.
+   trusted Mac that has access to the approved recovery store, verify all five
+   documented values, and stream each value directly into the corresponding
+   repository secret. A validated local Keychain cache may be used, but it is
+   not the recovery authority. If a value is absent, stop; do not create
+   replacement credentials or assume that a login Keychain synchronized it.
 5. Add the standard app-side Fastlane files and a thin caller workflow. Keep
    project-specific validation, packaging, artifact names, and release notes in
    the app repository.
@@ -37,6 +38,11 @@ any Apple, Match, GitHub secret, or certificate mutation.
 7. Run local syntax/build checks and an Apple capability plan before applying.
 8. Use manual dispatch with publish/upload disabled. Do not remove legacy
    secrets until one real canary succeeds.
+
+Normal onboarding never enables Match writes. Only an explicitly requested
+certificate or profile maintenance operation may set
+`APPLE_MATCH_WRITE_SESSION=1`, and only for one serialized session on a trusted
+Mac. Clear it immediately after the verified operation.
 
 Stop at the documented manual boundary for App Store Connect app records,
 agreements, managed capabilities, and one-time Apple credential creation. Never

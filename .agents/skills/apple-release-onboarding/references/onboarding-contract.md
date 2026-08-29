@@ -8,7 +8,8 @@ Add to each app:
   repository's supported version.
 - `fastlane/Appfile` with Bundle ID and Team ID.
 - `fastlane/Matchfile` with the private Match URL, branch
-  `team-566UG6DQ7E`, identifiers, type, and CI readonly behavior.
+  `team-566UG6DQ7E`, identifiers, type, and readonly-by-default behavior. Only
+  an explicitly authorized maintenance session may opt into writes.
 - `fastlane/Fastfile` importing the shared Fastfile at an immutable semantic tag.
 - Optional `fastlane/capabilities.yml` for standard Apple capabilities.
 - A thin workflow invoking the corresponding reusable workflow by full SHA and

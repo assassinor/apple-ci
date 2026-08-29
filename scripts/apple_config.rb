@@ -116,11 +116,15 @@ class AppleConfigReconciler
 
   def reconcile_app(app)
     identifier = app.fetch("identifier")
+    requested = Array(app["capabilities"]).map(&:to_s).uniq
     bundle = @client.find_bundle_id(identifier)
 
     unless bundle
       report("CREATE bundle ID #{identifier} (#{app.fetch('platform')})")
-      return unless @apply
+      unless @apply
+        requested.sort.each { |capability| report("ENABLE #{capability} for #{identifier}") }
+        return
+      end
 
       bundle = @client.create_bundle_id(
         identifier: identifier,
@@ -130,7 +134,6 @@ class AppleConfigReconciler
     end
 
     current = @client.capabilities(bundle.fetch("id"))
-    requested = Array(app["capabilities"]).map(&:to_s).uniq
     (requested - current).sort.each do |capability|
       report("ENABLE #{capability} for #{identifier}")
       @client.enable_capability(bundle_id: bundle.fetch("id"), capability_type: capability) if @apply

@@ -4,6 +4,27 @@ require "minitest/autorun"
 require "stringio"
 require_relative "../scripts/apple_config"
 
+class AppleConnectClientTest < Minitest::Test
+  def test_jwt_uses_es256_raw_signature
+    private_key = OpenSSL::PKey::EC.generate("prime256v1")
+    client = AppleConnectClient.new(
+      issuer_id: "issuer-id",
+      key_id: "KEY1234567",
+      private_key: private_key.to_pem,
+      transport: ->(*) { raise "transport should not be called" }
+    )
+
+    header, payload, signature = client.send(:jwt).split(".")
+    decoded_header = JSON.parse(Base64.urlsafe_decode64(header))
+    decoded_payload = JSON.parse(Base64.urlsafe_decode64(payload))
+
+    assert_equal("ES256", decoded_header.fetch("alg"))
+    assert_equal("KEY1234567", decoded_header.fetch("kid"))
+    assert_equal("issuer-id", decoded_payload.fetch("iss"))
+    assert_equal(64, Base64.urlsafe_decode64(signature).bytesize)
+  end
+end
+
 class FakeAppleClient
   attr_reader :created, :enabled
 
@@ -51,6 +72,7 @@ class AppleConfigReconcilerTest < Minitest::Test
     assert_empty(client.created)
     assert_empty(client.enabled)
     assert_includes(output.string, "PLAN: CREATE bundle ID com.example.app")
+    assert_includes(output.string, "PLAN: ENABLE PUSH_NOTIFICATIONS for com.example.app")
   end
 
   def test_apply_creates_bundle_and_missing_capabilities

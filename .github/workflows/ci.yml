@@ -23,6 +23,9 @@ jobs:
           ruby-version: "3.3"
           bundler-cache: true
 
+      - name: Install workflow validation tools
+        run: brew install actionlint shellcheck
+
       - name: Validate Ruby and Fastlane
         run: |
           ruby -c scripts/apple_config.rb
@@ -31,5 +34,6 @@ jobs:
 
       - name: Validate shell and public-repository safety
         run: |
+          actionlint .github/workflows/*.yml
           shellcheck scripts/check-secrets.sh
           scripts/check-secrets.sh

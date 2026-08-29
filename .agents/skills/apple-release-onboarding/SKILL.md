@@ -22,13 +22,20 @@ any Apple, Match, GitHub secret, or certificate mutation.
    Check the GitHub organization plan: selected organization secrets are the
    default, but a private repository in a GitHub Free organization must receive
    the same five names as repository-level secrets.
-4. Add the standard app-side Fastlane files and a thin caller workflow. Keep
+4. Configure secret access without printing values. For a repository that can
+   use selected organization secrets, add only its repository ID to each
+   secret's access policy. For a GitHub Free private repository, run on the
+   designated credential-management Mac, verify every documented Keychain item,
+   and stream each value directly into the corresponding repository secret. If
+   an item is absent, stop; do not create replacement credentials or assume
+   that the local login Keychain was synchronized through iCloud.
+5. Add the standard app-side Fastlane files and a thin caller workflow. Keep
    project-specific validation, packaging, artifact names, and release notes in
    the app repository.
-5. Pin `import_from_git` to an immutable `apple-ci` semantic version and the
+6. Pin `import_from_git` to an immutable `apple-ci` semantic version and the
    reusable workflow to its corresponding full commit SHA; update both together.
-6. Run local syntax/build checks and an Apple capability plan before applying.
-7. Use manual dispatch with publish/upload disabled. Do not remove legacy
+7. Run local syntax/build checks and an Apple capability plan before applying.
+8. Use manual dispatch with publish/upload disabled. Do not remove legacy
    secrets until one real canary succeeds.
 
 Stop at the documented manual boundary for App Store Connect app records,

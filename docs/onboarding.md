@@ -42,6 +42,25 @@ them, check the organization plan and repository visibility. GitHub Free does
 not expose organization secrets to private repositories, so a private app in a
 Free organization must use repository-level secrets with the same names.
 
+## Configure secret access for a new repository
+
+For a public `omzcj` repository, do not read or copy secret values. Add the new
+repository to the selected-repository policy of each existing organization
+secret.
+
+For a private `oh-my-app` repository while the organization is on GitHub Free,
+configure the five names as repository secrets. On the designated
+credential-management Mac, verify all five Keychain sources documented in the
+[credential runbook](credentials.md), then stream each value directly into its
+matching GitHub secret without displaying or logging it. Resolve the ASC private
+key account from the current `APPLE_ASC_KEY_ID` so key rotation does not leave a
+hard-coded Key ID behind.
+
+If any Keychain source is missing, stop onboarding. Do not silently create a new
+ASC key, Match password, certificate, or deploy key. The current recovery items
+are stored in the local file-based login Keychain and are not confirmed to sync
+through iCloud.
+
 ## Validate and roll out
 
 Run capability reconciliation without `--apply` first. Use a manual workflow

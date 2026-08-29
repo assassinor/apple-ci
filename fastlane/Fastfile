@@ -101,13 +101,21 @@ lane :shared_ios_testflight do |options|
     api_key: api_key
   )
 
+  profile_mapping = Actions.lane_context[SharedValues::MATCH_PROVISIONING_PROFILE_MAPPING] || {}
+  primary_identifier = options.fetch(:primary_app_identifier, identifiers.first)
+  profile_name = profile_mapping[primary_identifier]
+  UI.user_error!("Match did not install an App Store profile for #{primary_identifier}") if profile_name.to_s.empty?
+
   archive_path = options.fetch(:archive_path)
   output_directory = options.fetch(:output_directory)
   output_name = options.fetch(:output_name)
   xcargs = [
     "DEVELOPMENT_TEAM=#{APPLE_TEAM_ID}",
     "MARKETING_VERSION=#{options.fetch(:marketing_version)}",
-    "CURRENT_PROJECT_VERSION=#{options.fetch(:build_number)}"
+    "CURRENT_PROJECT_VERSION=#{options.fetch(:build_number)}",
+    "CODE_SIGN_STYLE=Manual",
+    "CODE_SIGN_IDENTITY=#{Shellwords.escape('Apple Distribution')}",
+    "PROVISIONING_PROFILE_SPECIFIER=#{Shellwords.escape(profile_name)}"
   ].join(" ")
 
   build_app(
@@ -118,6 +126,11 @@ lane :shared_ios_testflight do |options|
     output_directory: output_directory,
     output_name: output_name,
     export_method: "app-store",
+    export_options: {
+      signingStyle: "manual",
+      signingCertificate: "Apple Distribution",
+      provisioningProfiles: profile_mapping
+    },
     clean: true,
     xcargs: xcargs
   )

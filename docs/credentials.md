@@ -14,15 +14,22 @@
 ## Initial bootstrap
 
 1. Create the Team API key in App Store Connect and download its `.p8` once.
-2. Create a Developer ID Application certificate and export it with its private
-   key as a password-protected P12.
-3. Export the existing Apple Distribution identity as a password-protected P12.
+2. Create a Developer ID Application certificate and pair it with its private
+   key. For Match compatibility on current macOS runners, store imported RSA
+   private keys as traditional PEM (`BEGIN RSA PRIVATE KEY`) even though Match
+   uses a `.p12` filename.
+3. Import an Apple Distribution identity in the same format. If an existing
+   login-keychain identity cannot be exported because the old keychain password
+   is unavailable, create a dedicated CI Distribution certificate and leave the
+   old certificate valid until its consumers have been audited.
 4. On M2, initialize Match and import both identities/profiles into the fixed
    branch using a strong `MATCH_PASSWORD`.
 5. Verify a fresh temporary keychain can restore both identities using Match in
    readonly mode.
-6. Add the five organization secrets to `omzcj` and `oh-my-app`, granting access
-   only to onboarded repositories.
+6. Add the five organization secrets, granting access only to onboarded
+   repositories. GitHub Free organizations do not expose organization secrets
+   to private repositories; use equivalent repository-level secrets for those
+   repositories until the organization is upgraded.
 7. Delete transient plaintext files.
 
 Do not revoke an old signing certificate automatically: already distributed
